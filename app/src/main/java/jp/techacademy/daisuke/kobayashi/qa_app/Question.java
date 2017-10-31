@@ -12,8 +12,20 @@ public class Question implements Serializable {
     private String mUid;
     private String mQuestionUid;
     private int mGenre;
+    private String mFab;
     private byte[] mBitmapArray;
     private ArrayList<Answer> mAnswerArrayList;
+
+    // fab入替用
+    public String setFab(String fab) {
+        mFab = fab;
+        return mFab;
+    }
+
+    // お気に入り判定用
+    public String getFab() {
+        return mFab;
+    }
 
     public String getTitle() {
         return mTitle;
@@ -34,6 +46,7 @@ public class Question implements Serializable {
     public String getQuestionUid() {
         return mQuestionUid;
     }
+
     public int getGenre() {
         return mGenre;
     }
@@ -46,13 +59,14 @@ public class Question implements Serializable {
         return mAnswerArrayList;
     }
 
-    public Question(String title, String body, String name, String uid, String questionUid, int genre, byte[] bytes, ArrayList<Answer> answers) {
+    public Question(String title, String body, String name, String uid, String questionUid, int genre, String fab, byte[] bytes, ArrayList<Answer> answers) {
         mTitle = title;
         mBody = body;
         mName = name;
         mUid = uid;
         mQuestionUid = questionUid;
         mGenre = genre;
+        mFab = fab;
         mBitmapArray = bytes.clone();
         mAnswerArrayList = answers;
     }

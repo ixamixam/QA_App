@@ -18,6 +18,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.util.Log;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -26,6 +27,8 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,11 +50,19 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
 
+            // すでにリストにある場合は取得しない（お気に入り変更時用
+            for (Question question: mQuestionArrayList) {
+                if (dataSnapshot.getKey().equals(question.getQuestionUid())) {
+                    return;
+                }
+            }
+
             // データ一通り設定
             HashMap map = (HashMap) dataSnapshot.getValue();
             String title = (String) map.get("title");
             String body = (String) map.get("body");
             String name = (String) map.get("name");
+            String fab = (String) map.get("fab");
             String uid = (String) map.get("uid");
             String imageString = (String) map.get("image");
             byte[] bytes;
@@ -75,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            Question question = new Question(title, body, name, uid, dataSnapshot.getKey(), mGenre, bytes, answerArrayList);
+            Question question = new Question(title, body, name, uid, dataSnapshot.getKey(), mGenre, fab, bytes, answerArrayList);
             mQuestionArrayList.add(question);
 
             // ここでリスト更新
@@ -89,8 +100,14 @@ public class MainActivity extends AppCompatActivity {
             // 変更があったQuestionを探す
             for (Question question: mQuestionArrayList) {
                 if (dataSnapshot.getKey().equals(question.getQuestionUid())) {
+
+                    String fab = (String) map.get("fab");
+                    Log.d("fab:",fab);
+                    question.setFab(fab);
+
                     // このアプリで変更がある可能性があるのは回答(Answer)のみ
                     question.getAnswers().clear();
+
                     HashMap answerMap = (HashMap) map.get("answers");
                     if (answerMap != null) {
                         for (Object key : answerMap.keySet()) {
@@ -150,8 +167,12 @@ public class MainActivity extends AppCompatActivity {
                 if (user == null) {
                     Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
                     startActivity(intent);
-                }else {
+                }else if (mGenre == 5){
+                    // お気に入りは動かさない
+                    Snackbar.make(view, "お気に入りからは投稿できません。", Snackbar.LENGTH_LONG).show();
+                }else{
                     // ジャンルを渡して質問作成画面を起動する
+
                     Intent intent = new Intent(getApplicationContext(), QuestionSendActivity.class);
                     intent.putExtra("genre", mGenre);
                     startActivity(intent);
@@ -183,23 +204,45 @@ public class MainActivity extends AppCompatActivity {
                 } else if (id == R.id.nav_compter) {
                     mToolbar.setTitle("コンピューター");
                     mGenre = 4;
+                } else if (id == R.id.nav_fab) {
+                    mToolbar.setTitle("お気に入り");
+                    mGenre = 5;
                 }
 
                 DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
                 drawer.closeDrawer(GravityCompat.START);
 
                 // 質問のリストをクリアしてから再度Adapterにセットし、AdapterをListViewにセットし直す
+                Log.d("clear:", "clear");
                 mQuestionArrayList.clear();
                 mAdapter.setQuestionArrayList(mQuestionArrayList);
                 mListView.setAdapter(mAdapter);
 
                 // 選択したジャンルにリスナーを登録する
+                // リファレンス（データベースへの参照が空じゃなかったら
                 if (mGenreRef != null) {
+                    // 参照先から以前に登録されたイベントを削除
                     mGenreRef.removeEventListener(mEventListener);
                 }
 
-                mGenreRef = mDatabaseReference.child(Const.ContentsPATH).child(String.valueOf(mGenre));
-                mGenreRef.addChildEventListener(mEventListener);
+                //mGenreRef = mDatabaseReference.child(Const.ContentsPATH).child(String.valueOf(mGenre));
+                // クエリに書き換え
+
+                ///*
+                if(mGenre == 5) {
+                // お気に入りだったらお気に入りだけを表示
+                    Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("fab").equalTo("yes");
+                    mGenreRef.addChildEventListener(mEventListener);
+                }else{
+                // それ以外だったら各ジャンルのみを表示
+                    Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("genre").equalTo(String.valueOf(mGenre));
+                    mGenreRef.addChildEventListener(mEventListener);
+                }
+                //*/
+
+                //Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("genre").equalTo(String.valueOf(mGenre));
+                // Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("fab").equalTo("yes");
+                //mGenreRef.addChildEventListener(mEventListener);
 
                 return true;
             }
@@ -220,11 +263,17 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 // Questionのインスタンスを渡して質問詳細画面を起動する
-                Intent intent = new Intent(getApplicationContext(), QuestionDetailActivity.class);
-                intent.putExtra("question", mQuestionArrayList.get(position));
-                startActivity(intent);
+                 Intent intent = new Intent(getApplicationContext(), QuestionDetailActivity.class);
+                 intent.putExtra("question", mQuestionArrayList.get(position));
+                 startActivity(intent);
+
+                // 画面遷移テスト
+                //Intent intent = new Intent(getApplicationContext(), QuestionSendActivity.class);
+                //intent.putExtra("genre", mGenre);
+                //startActivity(intent);
             }
         });
+
     }
 
     @Override
