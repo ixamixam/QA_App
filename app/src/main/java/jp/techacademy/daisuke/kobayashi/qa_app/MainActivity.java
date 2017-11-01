@@ -35,6 +35,7 @@ import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
 
+    public int RESURT = 100;
     private Toolbar mToolbar;
     private int mGenre = 0;
 
@@ -47,11 +48,12 @@ public class MainActivity extends AppCompatActivity {
     // QuestionsListAdapterにデータを設定
     // Firebaseからデータを取得する必要。データに追加・変化があった時に受け取るChildEventListenerを作成
     private ChildEventListener mEventListener = new ChildEventListener() {
+
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
 
             // すでにリストにある場合は取得しない（お気に入り変更時用
-            for (Question question: mQuestionArrayList) {
+            for (Question question : mQuestionArrayList) {
                 if (dataSnapshot.getKey().equals(question.getQuestionUid())) {
                     return;
                 }
@@ -98,11 +100,11 @@ public class MainActivity extends AppCompatActivity {
             HashMap map = (HashMap) dataSnapshot.getValue();
 
             // 変更があったQuestionを探す
-            for (Question question: mQuestionArrayList) {
+            for (Question question : mQuestionArrayList) {
                 if (dataSnapshot.getKey().equals(question.getQuestionUid())) {
 
                     String fab = (String) map.get("fab");
-                    Log.d("fab:",fab);
+                    Log.d("fab:", fab);
                     question.setFab(fab);
 
                     // このアプリで変更がある可能性があるのは回答(Answer)のみ
@@ -166,11 +168,11 @@ public class MainActivity extends AppCompatActivity {
                 // ログインしていなければログイン画面に遷移させる
                 if (user == null) {
                     Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
-                    startActivity(intent);
-                }else if (mGenre == 5){
+                    startActivityForResult(intent,RESURT);
+                } else if (mGenre == 5) {
                     // お気に入りは動かさない
                     Snackbar.make(view, "お気に入りからは投稿できません。", Snackbar.LENGTH_LONG).show();
-                }else{
+                } else {
                     // ジャンルを渡して質問作成画面を起動する
 
                     Intent intent = new Intent(getApplicationContext(), QuestionSendActivity.class);
@@ -182,12 +184,26 @@ public class MainActivity extends AppCompatActivity {
 
         // ナビゲーションドロワーの設定
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, mToolbar, R.string.app_name, R.string.app_name);
+        final NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, mToolbar, R.string.app_name, R.string.app_name){
+            public void onDrawerOpened(View drawerView) {
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                Menu menu = navigationView.getMenu();
+                MenuItem menuItem1 = menu.findItem(R.id.nav_fab);
+                if (user == null) {
+                    menuItem1.setVisible(false);
+                }else
+                    menuItem1.setVisible(true);
+            }
+        };
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
+
+
             @Override
             public boolean onNavigationItemSelected(MenuItem item) {
                 int id = item.getItemId();
@@ -229,12 +245,12 @@ public class MainActivity extends AppCompatActivity {
                 // クエリに書き換え
 
                 ///*
-                if(mGenre == 5) {
-                // お気に入りだったらお気に入りだけを表示
+                if (mGenre == 5) {
+                    // お気に入りだったらお気に入りだけを表示
                     Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("fab").equalTo("yes");
                     mGenreRef.addChildEventListener(mEventListener);
-                }else{
-                // それ以外だったら各ジャンルのみを表示
+                } else {
+                    // それ以外だったら各ジャンルのみを表示
                     Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("genre").equalTo(String.valueOf(mGenre));
                     mGenreRef.addChildEventListener(mEventListener);
                 }
@@ -263,9 +279,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 // Questionのインスタンスを渡して質問詳細画面を起動する
-                 Intent intent = new Intent(getApplicationContext(), QuestionDetailActivity.class);
-                 intent.putExtra("question", mQuestionArrayList.get(position));
-                 startActivity(intent);
+                Intent intent = new Intent(getApplicationContext(), QuestionDetailActivity.class);
+                intent.putExtra("question", mQuestionArrayList.get(position));
+                startActivity(intent);
 
                 // 画面遷移テスト
                 //Intent intent = new Intent(getApplicationContext(), QuestionSendActivity.class);
@@ -273,12 +289,13 @@ public class MainActivity extends AppCompatActivity {
                 //startActivity(intent);
             }
         });
-
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
+
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
@@ -297,5 +314,11 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        //帰ってきたとき
+
     }
 }
