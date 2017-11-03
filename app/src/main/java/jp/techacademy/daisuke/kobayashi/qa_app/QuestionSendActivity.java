@@ -148,9 +148,9 @@ public class QuestionSendActivity extends AppCompatActivity implements View.OnCl
 
             // ジャンルのリファレンス
             DatabaseReference dataBaseReference = FirebaseDatabase.getInstance().getReference();
-            //DatabaseReference genreRef = dataBaseReference.child(Const.ContentsPATH).child(String.valueOf(mGenre));
+            DatabaseReference genreRef = dataBaseReference.child(Const.ContentsPATH).child(String.valueOf(mGenre));
             // mGenreを要素に変更
-            DatabaseReference genreRef = dataBaseReference.child(Const.ContentsPATH);
+            //DatabaseReference genreRef = dataBaseReference.child(Const.ContentsPATH);
 
             Map<String, String> data = new HashMap<String, String>();
 
@@ -185,7 +185,7 @@ public class QuestionSendActivity extends AppCompatActivity implements View.OnCl
             data.put("genre",String.valueOf(mGenre));
 
             // 判定初期値
-            data.put("fab","no");
+            data.put("fav","no");
 
             // 添付画像を取得する
             BitmapDrawable drawable = (BitmapDrawable) mImageView.getDrawable();

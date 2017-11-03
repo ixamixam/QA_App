@@ -33,7 +33,7 @@ public class QuestionDetailListAdapter extends BaseAdapter {
     private LayoutInflater mLayoutInflater = null;
     private Question mQustion;
     private DatabaseReference mDatabaseReference;
-    private DatabaseReference mFabReference;
+    private DatabaseReference mFavReference;
 
     public QuestionDetailListAdapter(Context context, Question question) {
         mLayoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -80,11 +80,11 @@ public class QuestionDetailListAdapter extends BaseAdapter {
             String body = mQustion.getBody();
             String name = mQustion.getName();
             final String questionUid = mQustion.getQuestionUid();
-            final String fab = mQustion.getFab();
+            final String fav = mQustion.getFav();
 
             mDatabaseReference = FirebaseDatabase.getInstance().getReference();
-            mFabReference = mDatabaseReference.child(Const.ContentsPATH).child(questionUid);
-            //final String fab = mFabTemp.toString();
+            mFavReference = mDatabaseReference.child(Const.ContentsPATH).child(questionUid);
+            //final String fav = mFavTemp.toString();
 
             TextView bodyTextView = (TextView) convertView.findViewById(R.id.bodyTextView);
             bodyTextView.setText(body);
@@ -96,22 +96,18 @@ public class QuestionDetailListAdapter extends BaseAdapter {
             final Map<String, Object> data = new HashMap<>();
 
             //ログインしてるかどうかの判定（してなかったらボタンは表示せず何もしない
-            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
             if (user == null) {
             } else {
                 // ここから追加分、お気に入りボタン
-                final ImageView imageView1 = (ImageView) convertView.findViewById(R.id.imageViewFab);
+                final ImageView imageView1 = (ImageView) convertView.findViewById(R.id.imageViewFav);
 
-
-                // ユーザーのお気に入り一覧を取得
-
-
-                //お気に入りに入っていればfab01
-                //なければfab00をセット
-                if (fab.equals("no")) {
-                    imageView1.setImageResource(R.drawable.fab00);
+                // お気に入りに入っていればfav01
+                // なければfav00をセット
+                if (fav.equals("no")) {
+                    imageView1.setImageResource(R.drawable.fav00);
                 } else {
-                    imageView1.setImageResource(R.drawable.fab01);
+                    imageView1.setImageResource(R.drawable.fav01);
                 }
 
                 imageView1.setOnClickListener(new View.OnClickListener() {
@@ -119,22 +115,35 @@ public class QuestionDetailListAdapter extends BaseAdapter {
                     public void onClick(View view) {
 
                         String questionUid = mQustion.getQuestionUid();
+                        String userID = user.getUid();
+                        String questionGenre = String.valueOf(mQustion.getGenre());
                         DatabaseReference dataBaseReference = FirebaseDatabase.getInstance().getReference();
-                        DatabaseReference genreRef = dataBaseReference.child(Const.ContentsPATH);
 
-                        if (fab.equals("no")) {
-                            imageView1.setImageResource(R.drawable.fab01);
-                            data.put("fab", "yes");
-                            genreRef.child(questionUid).updateChildren(data);
-                            //fab書き換え
+                        DatabaseReference genreRefContents = dataBaseReference.child(Const.ContentsPATH);
+                        DatabaseReference genreRefFav = dataBaseReference.child(Const.UsersFavPATH);
+
+                        //genreRef.child(questionUid).updateChildren(data);
+
+
+                        if (fav.equals("no")) {
+                            imageView1.setImageResource(R.drawable.fav01);
+                            data.put("fav", "yes");
+
+                            //fav書き換え
+                            genreRefContents.child(questionGenre).child(questionUid).updateChildren(data);
+                            //genreRefFav.child(userID).child(questionUid).setValue();
+                            genreRefFav.child(userID).child(questionUid).updateChildren(data);
+
 
                         } else {
-                            imageView1.setImageResource(R.drawable.fab00);
-                            data.put("fab", "no");
-                            genreRef.child(questionUid).updateChildren(data);
-                        }
+                            imageView1.setImageResource(R.drawable.fav00);
+                            data.put("fav", "no");
+                            genreRefContents.child(questionGenre).child(questionUid).updateChildren(data);
+                            genreRefFav.child(userID).child(questionUid).removeValue();
+                            //genreRefFav.child(userID).child(questionUid).updateChildren(data);
 
-                        Log.d("test:", fab);
+                        }
+                        Log.d("test:", fav);
                         Log.d("test:", "test");
                     }
                 });

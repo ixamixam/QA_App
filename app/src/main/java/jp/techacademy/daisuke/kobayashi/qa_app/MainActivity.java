@@ -41,9 +41,51 @@ public class MainActivity extends AppCompatActivity {
 
     private DatabaseReference mDatabaseReference;
     private DatabaseReference mGenreRef;
+    private DatabaseReference mFavRef;
     private ListView mListView;
     private ArrayList<Question> mQuestionArrayList;
     private QuestionsListAdapter mAdapter;
+    private ArrayList<Fav> mFavArrayList;
+
+    private  ChildEventListener mEventListenerFavlist = new ChildEventListener() {
+        @Override
+        public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+            HashMap map = (HashMap) dataSnapshot.getValue();
+
+            //割り当てても宣言は必要
+            mFavArrayList = new ArrayList<Fav>();
+
+            if (map != null) {
+                for(Object key : map.keySet()) {
+                    String favKey = key.toString();
+                    Log.d("fav",favKey);
+                    Fav fav = new Fav(favKey);
+                    mFavArrayList.add(fav);
+                }
+            }
+        }
+
+        @Override
+        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+        }
+
+        @Override
+        public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+        }
+
+        @Override
+        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+        }
+
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+
+        }
+    };
+
 
     // QuestionsListAdapterにデータを設定
     // Firebaseからデータを取得する必要。データに追加・変化があった時に受け取るChildEventListenerを作成
@@ -59,12 +101,14 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
+
             // データ一通り設定
             HashMap map = (HashMap) dataSnapshot.getValue();
+
             String title = (String) map.get("title");
             String body = (String) map.get("body");
             String name = (String) map.get("name");
-            String fab = (String) map.get("fab");
+            String fav = (String) map.get("fav");
             String uid = (String) map.get("uid");
             String imageString = (String) map.get("image");
             byte[] bytes;
@@ -74,11 +118,13 @@ public class MainActivity extends AppCompatActivity {
                 bytes = new byte[0];
             }
 
-            // Answerも
+            // Answerも,下の階層の取り方
             ArrayList<Answer> answerArrayList = new ArrayList<Answer>();
             HashMap answerMap = (HashMap) map.get("answers");
             if (answerMap != null) {
                 for (Object key : answerMap.keySet()) {
+
+                    // ここでさらに下の階層をtempに
                     HashMap temp = (HashMap) answerMap.get((String) key);
                     String answerBody = (String) temp.get("body");
                     String answerName = (String) temp.get("name");
@@ -88,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            Question question = new Question(title, body, name, uid, dataSnapshot.getKey(), mGenre, fab, bytes, answerArrayList);
+            Question question = new Question(title, body, name, uid, dataSnapshot.getKey(), mGenre, fav, bytes, answerArrayList);
             mQuestionArrayList.add(question);
 
             // ここでリスト更新
@@ -102,10 +148,6 @@ public class MainActivity extends AppCompatActivity {
             // 変更があったQuestionを探す
             for (Question question : mQuestionArrayList) {
                 if (dataSnapshot.getKey().equals(question.getQuestionUid())) {
-
-                    String fab = (String) map.get("fab");
-                    Log.d("fab:", fab);
-                    question.setFab(fab);
 
                     // このアプリで変更がある可能性があるのは回答(Answer)のみ
                     question.getAnswers().clear();
@@ -142,6 +184,112 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    // お気に入り用
+    private ChildEventListener mEventListenerFav = new ChildEventListener() {
+
+        @Override
+        public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+
+            // データ一通り設定
+            HashMap upMap = (HashMap) dataSnapshot.getValue();
+
+            // コンテンツ全体を取得
+            if (upMap != null) {
+                for (Object key : upMap.keySet()) {
+                    String keyName = key.toString();
+                    HashMap map = (HashMap) upMap.get((String) key);
+
+                    // 二重は取得しない
+                    for (Question question : mQuestionArrayList) {
+                        if (key.equals(question.getQuestionUid())) {
+                            return;
+                        }
+                    }
+
+                    // リストにあるもののみ取得
+                        for (Fav favlist : mFavArrayList) {
+                            if (key.equals(favlist.getFav())) {
+
+                                String title = (String) map.get("title");
+                                String body = (String) map.get("body");
+                                String name = (String) map.get("name");
+                                String fav = (String) map.get("fav");
+                                String uid = (String) map.get("uid");
+                                String imageString = (String) map.get("image");
+                                byte[] bytes;
+                                if (imageString != null) {
+                                    bytes = Base64.decode(imageString, Base64.DEFAULT);
+                                } else {
+                                    bytes = new byte[0];
+                                }
+
+                                // Answerも,下の階層の取り方
+                                ArrayList<Answer> answerArrayList = new ArrayList<Answer>();
+                                HashMap answerMap = (HashMap) map.get("answers");
+                                if (answerMap != null) {
+                                    for (Object keys : answerMap.keySet()) {
+
+                                        // ここでさらに下の階層をtempに
+                                        HashMap temp = (HashMap) answerMap.get((String) keys);
+                                        String answerBody = (String) temp.get("body");
+                                        String answerName = (String) temp.get("name");
+                                        String answerUid = (String) temp.get("uid");
+                                        Answer answer = new Answer(answerBody, answerName, answerUid, (String) keys);
+                                        answerArrayList.add(answer);
+                                    }
+                                }
+                                Question question = new Question(title, body, name, uid, keyName, mGenre, fav, bytes, answerArrayList);
+                                mQuestionArrayList.add(question);
+                            }
+                        }
+                    // ここでリスト更新
+                    mAdapter.notifyDataSetChanged();
+                }
+            }
+        }
+
+        @Override
+        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+            HashMap map = (HashMap) dataSnapshot.getValue();
+
+            // 変更があったQuestionを探す
+            for (Question question : mQuestionArrayList) {
+                if (dataSnapshot.getKey().equals(question.getQuestionUid())) {
+
+                    // このアプリで変更がある可能性があるのは回答(Answer)のみ
+                    question.getAnswers().clear();
+
+                    HashMap answerMap = (HashMap) map.get("answers");
+                    if (answerMap != null) {
+                        for (Object key : answerMap.keySet()) {
+                            HashMap temp = (HashMap) answerMap.get((String) key);
+                            String answerBody = (String) temp.get("body");
+                            String answerName = (String) temp.get("name");
+                            String answerUid = (String) temp.get("uid");
+                            Answer answer = new Answer(answerBody, answerName, answerUid, (String) key);
+                            question.getAnswers().add(answer);
+                        }
+                    }
+                    mAdapter.notifyDataSetChanged();
+                }
+            }
+        };
+
+        @Override
+        public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+        }
+
+        @Override
+        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+        }
+
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -150,6 +298,7 @@ public class MainActivity extends AppCompatActivity {
 
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
+        final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -190,13 +339,14 @@ public class MainActivity extends AppCompatActivity {
             public void onDrawerOpened(View drawerView) {
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
                 Menu menu = navigationView.getMenu();
-                MenuItem menuItem1 = menu.findItem(R.id.nav_fab);
+                MenuItem menuItem1 = menu.findItem(R.id.nav_fav);
                 if (user == null) {
                     menuItem1.setVisible(false);
                 }else
                     menuItem1.setVisible(true);
             }
         };
+
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
@@ -220,7 +370,7 @@ public class MainActivity extends AppCompatActivity {
                 } else if (id == R.id.nav_compter) {
                     mToolbar.setTitle("コンピューター");
                     mGenre = 4;
-                } else if (id == R.id.nav_fab) {
+                } else if (id == R.id.nav_fav) {
                     mToolbar.setTitle("お気に入り");
                     mGenre = 5;
                 }
@@ -241,23 +391,33 @@ public class MainActivity extends AppCompatActivity {
                     mGenreRef.removeEventListener(mEventListener);
                 }
 
+                if (mFavRef != null) {
+                    // 参照先から以前に登録されたイベントを削除
+                    mFavRef.removeEventListener(mEventListener);
+                }
+
                 //mGenreRef = mDatabaseReference.child(Const.ContentsPATH).child(String.valueOf(mGenre));
                 // クエリに書き換え
 
-                ///*
+                // 条件分岐
                 if (mGenre == 5) {
                     // お気に入りだったらお気に入りだけを表示
-                    Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("fab").equalTo("yes");
-                    mGenreRef.addChildEventListener(mEventListener);
+                    //Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("fav").equalTo("yes");
+
+                    // ここをお気に入りに変える
+                    mFavRef = mDatabaseReference.child(Const.UsersFavPATH);
+                    mFavRef.addChildEventListener(mEventListenerFavlist);
+
+                    mGenreRef = mDatabaseReference.child(Const.ContentsPATH);
+                    mGenreRef.addChildEventListener(mEventListenerFav);
                 } else {
                     // それ以外だったら各ジャンルのみを表示
-                    Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("genre").equalTo(String.valueOf(mGenre));
+                    //Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("genre").equalTo(String.valueOf(mGenre));
+                    mGenreRef = mDatabaseReference.child(Const.ContentsPATH).child(String.valueOf(mGenre));
+                    //mGenreRef = mDatabaseReference.child(Const.ContentsPATH);
                     mGenreRef.addChildEventListener(mEventListener);
                 }
-                //*/
 
-                //Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("genre").equalTo(String.valueOf(mGenre));
-                // Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("fab").equalTo("yes");
                 //mGenreRef.addChildEventListener(mEventListener);
 
                 return true;

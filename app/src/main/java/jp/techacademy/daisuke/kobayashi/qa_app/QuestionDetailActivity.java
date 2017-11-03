@@ -88,8 +88,8 @@ public class QuestionDetailActivity extends AppCompatActivity {
         mListView.setAdapter(mAdapter);
         mAdapter.notifyDataSetChanged();
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        FloatingActionButton fav = (FloatingActionButton) findViewById(R.id.fav);
+        fav.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 // ログイン済みのユーザーを取得する

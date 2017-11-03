@@ -20,7 +20,7 @@
         android:inputType="textMultiLine"
         android:layout_alignTop="@+id/imageView"
         android:layout_toEndOf="@+id/imageView"
-        android:layout_toStartOf="@+id/imageViewFab" />
+        android:layout_toStartOf="@+id/imageViewFav" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -34,7 +34,7 @@
     <ImageView
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:id="@+id/imageViewFab"
+        android:id="@+id/imageViewFav"
         android:layout_margin="2dp"
         android:layout_alignParentRight="true" />
 
