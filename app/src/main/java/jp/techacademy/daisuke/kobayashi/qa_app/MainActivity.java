@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.support.constraint.solver.widgets.Snapshot;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
@@ -52,16 +53,17 @@ public class MainActivity extends AppCompatActivity {
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
             HashMap map = (HashMap) dataSnapshot.getValue();
 
-            //割り当てても宣言は必要
-            mFavArrayList = new ArrayList<Fav>();
-
             if (map != null) {
                 for(Object key : map.keySet()) {
-                    String favKey = key.toString();
-                    Log.d("fav",favKey);
+                    String favKey = dataSnapshot.getKey();
+                    //Log.d("fav",favKey);
                     Fav fav = new Fav(favKey);
                     mFavArrayList.add(fav);
                 }
+            }
+
+            for(Fav fav : mFavArrayList){
+                Log.d("addfav",fav.getFav());
             }
         }
 
@@ -72,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onChildRemoved(DataSnapshot dataSnapshot) {
-
         }
 
         @Override
@@ -184,68 +185,70 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    // お気に入り用
+
+    // お気に入り用、コンテンツ全体を取得
     private ChildEventListener mEventListenerFav = new ChildEventListener() {
 
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
 
+            for(Fav fav : mFavArrayList){
+                Log.d("fabfirst",fav.getFav());
+            }
+
             // データ一通り設定
-            HashMap upMap = (HashMap) dataSnapshot.getValue();
-
-            // コンテンツ全体を取得
-            if (upMap != null) {
-                for (Object key : upMap.keySet()) {
-                    String keyName = key.toString();
-                    HashMap map = (HashMap) upMap.get((String) key);
-
-                    // 二重は取得しない
-                    for (Question question : mQuestionArrayList) {
-                        if (key.equals(question.getQuestionUid())) {
+            HashMap qmap = (HashMap) dataSnapshot.getValue();
+            if(qmap != null) {
+                for (Object key : qmap.keySet()) {
+                    for(Question question : mQuestionArrayList){
+                        if(key.equals(question.getUid())){
                             return;
                         }
                     }
 
-                    // リストにあるもののみ取得
-                        for (Fav favlist : mFavArrayList) {
-                            if (key.equals(favlist.getFav())) {
+                    HashMap map = (HashMap) qmap.get((String) key);
+                    String qkey = key.toString();
+                    String title = (String) map.get("title");
+                    String body = (String) map.get("body");
+                    String name = (String) map.get("name");
+                    String qfav = (String) map.get("fav");
+                    String uid = (String) map.get("uid");
+                    String imageString = (String) map.get("image");
+                    byte[] bytes;
+                    if (imageString != null) {
+                        bytes = Base64.decode(imageString, Base64.DEFAULT);
+                    } else {
+                        bytes = new byte[0];
+                    }
 
-                                String title = (String) map.get("title");
-                                String body = (String) map.get("body");
-                                String name = (String) map.get("name");
-                                String fav = (String) map.get("fav");
-                                String uid = (String) map.get("uid");
-                                String imageString = (String) map.get("image");
-                                byte[] bytes;
-                                if (imageString != null) {
-                                    bytes = Base64.decode(imageString, Base64.DEFAULT);
-                                } else {
-                                    bytes = new byte[0];
-                                }
+                    // Answerも,下の階層の取り方
+                    ArrayList<Answer> answerArrayList = new ArrayList<Answer>();
+                    HashMap answerMap = (HashMap) map.get("answers");
+                    if (answerMap != null) {
+                        for (Object keya : answerMap.keySet()) {
 
-                                // Answerも,下の階層の取り方
-                                ArrayList<Answer> answerArrayList = new ArrayList<Answer>();
-                                HashMap answerMap = (HashMap) map.get("answers");
-                                if (answerMap != null) {
-                                    for (Object keys : answerMap.keySet()) {
-
-                                        // ここでさらに下の階層をtempに
-                                        HashMap temp = (HashMap) answerMap.get((String) keys);
-                                        String answerBody = (String) temp.get("body");
-                                        String answerName = (String) temp.get("name");
-                                        String answerUid = (String) temp.get("uid");
-                                        Answer answer = new Answer(answerBody, answerName, answerUid, (String) keys);
-                                        answerArrayList.add(answer);
-                                    }
-                                }
-                                Question question = new Question(title, body, name, uid, keyName, mGenre, fav, bytes, answerArrayList);
-                                mQuestionArrayList.add(question);
-                            }
+                            // ここでさらに下の階層をtempに
+                            HashMap temp = (HashMap) answerMap.get((String) keya);
+                            String answerBody = (String) temp.get("body");
+                            String answerName = (String) temp.get("name");
+                            String answerUid = (String) temp.get("uid");
+                            Answer answer = new Answer(answerBody, answerName, answerUid, (String) key);
+                            answerArrayList.add(answer);
                         }
-                    // ここでリスト更新
-                    mAdapter.notifyDataSetChanged();
+                    }
+
+                    // お気に入りに入ってるかどうか
+                    for(Fav fav : mFavArrayList) {
+                        if(fav.getFav().equals(qkey)) {
+                            Question question = new Question(title, body, name, uid, qkey, mGenre, qfav, bytes, answerArrayList);
+                            mQuestionArrayList.add(question);
+                        }
+                    }
                 }
             }
+
+            // ここでリスト更新
+            mAdapter.notifyDataSetChanged();
         }
 
         @Override
@@ -273,7 +276,7 @@ public class MainActivity extends AppCompatActivity {
                     mAdapter.notifyDataSetChanged();
                 }
             }
-        };
+        }
 
         @Override
         public void onChildRemoved(DataSnapshot dataSnapshot) {
@@ -379,8 +382,8 @@ public class MainActivity extends AppCompatActivity {
                 drawer.closeDrawer(GravityCompat.START);
 
                 // 質問のリストをクリアしてから再度Adapterにセットし、AdapterをListViewにセットし直す
-                Log.d("clear:", "clear");
                 mQuestionArrayList.clear();
+                mFavArrayList.clear();
                 mAdapter.setQuestionArrayList(mQuestionArrayList);
                 mListView.setAdapter(mAdapter);
 
@@ -389,12 +392,13 @@ public class MainActivity extends AppCompatActivity {
                 if (mGenreRef != null) {
                     // 参照先から以前に登録されたイベントを削除
                     mGenreRef.removeEventListener(mEventListener);
+                    mGenreRef.removeEventListener(mEventListenerFav);
                 }
 
-                if (mFavRef != null) {
+                //if (mFavRef != null) {
                     // 参照先から以前に登録されたイベントを削除
-                    mFavRef.removeEventListener(mEventListener);
-                }
+                //    mFavRef.removeEventListener(mEventListenerFavlist);
+                //}
 
                 //mGenreRef = mDatabaseReference.child(Const.ContentsPATH).child(String.valueOf(mGenre));
                 // クエリに書き換え
@@ -405,11 +409,14 @@ public class MainActivity extends AppCompatActivity {
                     //Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("fav").equalTo("yes");
 
                     // ここをお気に入りに変える
-                    mFavRef = mDatabaseReference.child(Const.UsersFavPATH);
+                    mFavRef = mDatabaseReference.child(Const.UsersFavPATH).child(user.getUid());
                     mFavRef.addChildEventListener(mEventListenerFavlist);
 
-                    mGenreRef = mDatabaseReference.child(Const.ContentsPATH);
-                    mGenreRef.addChildEventListener(mEventListenerFav);
+                    if(mFavRef != null) {
+                        mGenreRef = mDatabaseReference.child(Const.ContentsPATH);
+                        mGenreRef.addChildEventListener(mEventListenerFav);
+                    }
+                    
                 } else {
                     // それ以外だったら各ジャンルのみを表示
                     //Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("genre").equalTo(String.valueOf(mGenre));
@@ -417,9 +424,7 @@ public class MainActivity extends AppCompatActivity {
                     //mGenreRef = mDatabaseReference.child(Const.ContentsPATH);
                     mGenreRef.addChildEventListener(mEventListener);
                 }
-
                 //mGenreRef.addChildEventListener(mEventListener);
-
                 return true;
             }
         });
@@ -431,6 +436,7 @@ public class MainActivity extends AppCompatActivity {
         mListView = (ListView) findViewById(R.id.listView);
         mAdapter = new QuestionsListAdapter(this);
         mQuestionArrayList = new ArrayList<Question>();
+        mFavArrayList = new ArrayList<Fav>();
         mAdapter.notifyDataSetChanged();
 
         // setOnItemClickListenerメソッドでリスナーを登録し、
