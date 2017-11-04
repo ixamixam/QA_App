@@ -63,6 +63,7 @@ public class LoginActivity extends AppCompatActivity {
                     String email = mEmailEditText.getText().toString();
                     String password = mPasswordEditText.getText().toString();
                     login(email, password);
+
                 } else {
 
                     // 失敗した場合

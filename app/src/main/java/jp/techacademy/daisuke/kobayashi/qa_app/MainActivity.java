@@ -240,6 +240,7 @@ public class MainActivity extends AppCompatActivity {
 
                     // お気に入りに入ってるかどうか
                     for(Fav fav : mFavArrayList) {
+                        Log.d("catchfav",fav.getFav());
                         if(fav.getFav().equals(qkey)) {
                             Question question = new Question(title, body, name, uid, qkey, mGenre, qfav, bytes, answerArrayList);
                             mQuestionArrayList.add(question);
