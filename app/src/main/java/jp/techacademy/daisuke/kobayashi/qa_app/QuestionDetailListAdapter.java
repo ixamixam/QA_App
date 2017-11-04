@@ -22,6 +22,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -34,10 +35,17 @@ public class QuestionDetailListAdapter extends BaseAdapter {
     private Question mQustion;
     private DatabaseReference mDatabaseReference;
     private DatabaseReference mFavReference;
+    private DatabaseReference mFavRef;
+    private ArrayList<Fav> mFavArrayList;
+    private int mFabFlag;
 
-    public QuestionDetailListAdapter(Context context, Question question) {
+
+
+
+    public QuestionDetailListAdapter(Context context, Question question, int fabFlag) {
         mLayoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         mQustion = question;
+        mFabFlag = fabFlag;
     }
 
     @Override
@@ -80,7 +88,12 @@ public class QuestionDetailListAdapter extends BaseAdapter {
             String body = mQustion.getBody();
             String name = mQustion.getName();
             final String questionUid = mQustion.getQuestionUid();
+            final String Uid = mQustion.getUid();
             final String fav = mQustion.getFav();
+            mFavArrayList = new ArrayList<Fav>();
+
+            // ログイン済みのユーザーを取得する
+            final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
             mDatabaseReference = FirebaseDatabase.getInstance().getReference();
             mFavReference = mDatabaseReference.child(Const.ContentsPATH).child(questionUid);
@@ -96,7 +109,6 @@ public class QuestionDetailListAdapter extends BaseAdapter {
             final Map<String, Object> data = new HashMap<>();
 
             //ログインしてるかどうかの判定（してなかったらボタンは表示せず何もしない
-            final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
             if (user == null) {
             } else {
                 // ここから追加分、お気に入りボタン
@@ -104,7 +116,7 @@ public class QuestionDetailListAdapter extends BaseAdapter {
 
                 // お気に入りに入っていればfav01
                 // なければfav00をセット
-                if (fav.equals("no")) {
+                if (mFabFlag == 0) {
                     imageView1.setImageResource(R.drawable.fav00);
                 } else {
                     imageView1.setImageResource(R.drawable.fav01);
@@ -124,13 +136,12 @@ public class QuestionDetailListAdapter extends BaseAdapter {
 
                         //genreRef.child(questionUid).updateChildren(data);
 
-
-                        if (fav.equals("no")) {
+                        if (mFabFlag == 0) {
                             imageView1.setImageResource(R.drawable.fav01);
                             data.put("fav", "yes");
 
                             //fav書き換え
-                            genreRefContents.child(questionGenre).child(questionUid).updateChildren(data);
+                            //genreRefContents.child(questionGenre).child(questionUid).updateChildren(data);
                             //genreRefFav.child(userID).child(questionUid).setValue();
                             genreRefFav.child(userID).child(questionUid).updateChildren(data);
 
@@ -138,7 +149,7 @@ public class QuestionDetailListAdapter extends BaseAdapter {
                         } else {
                             imageView1.setImageResource(R.drawable.fav00);
                             data.put("fav", "no");
-                            genreRefContents.child(questionGenre).child(questionUid).updateChildren(data);
+                            //genreRefContents.child(questionGenre).child(questionUid).updateChildren(data);
                             genreRefFav.child(userID).child(questionUid).removeValue();
                             //genreRefFav.child(userID).child(questionUid).updateChildren(data);
 

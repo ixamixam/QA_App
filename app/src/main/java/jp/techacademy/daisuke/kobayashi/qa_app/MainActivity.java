@@ -39,7 +39,6 @@ public class MainActivity extends AppCompatActivity {
     public int RESURT = 100;
     private Toolbar mToolbar;
     private int mGenre = 0;
-
     private DatabaseReference mDatabaseReference;
     private DatabaseReference mGenreRef;
     private DatabaseReference mFavRef;
@@ -192,9 +191,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
 
+            /*
             for(Fav fav : mFavArrayList){
                 Log.d("fabfirst",fav.getFav());
             }
+            */
 
             // データ一通り設定
             HashMap qmap = (HashMap) dataSnapshot.getValue();
@@ -395,6 +396,10 @@ public class MainActivity extends AppCompatActivity {
                     mGenreRef.removeEventListener(mEventListenerFav);
                 }
 
+                // お気に入り一覧取得
+                mFavRef = mDatabaseReference.child(Const.UsersFavPATH).child(user.getUid());
+                mFavRef.addChildEventListener(mEventListenerFavlist);
+
                 //if (mFavRef != null) {
                     // 参照先から以前に登録されたイベントを削除
                 //    mFavRef.removeEventListener(mEventListenerFavlist);
@@ -409,14 +414,12 @@ public class MainActivity extends AppCompatActivity {
                     //Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("fav").equalTo("yes");
 
                     // ここをお気に入りに変える
-                    mFavRef = mDatabaseReference.child(Const.UsersFavPATH).child(user.getUid());
-                    mFavRef.addChildEventListener(mEventListenerFavlist);
 
                     if(mFavRef != null) {
                         mGenreRef = mDatabaseReference.child(Const.ContentsPATH);
                         mGenreRef.addChildEventListener(mEventListenerFav);
                     }
-                    
+
                 } else {
                     // それ以外だったら各ジャンルのみを表示
                     //Query mGenreRef = mDatabaseReference.child(Const.ContentsPATH).orderByChild("genre").equalTo(String.valueOf(mGenre));
@@ -439,14 +442,28 @@ public class MainActivity extends AppCompatActivity {
         mFavArrayList = new ArrayList<Fav>();
         mAdapter.notifyDataSetChanged();
 
+
         // setOnItemClickListenerメソッドでリスナーを登録し、
         // リスナーの中で質問に相当するQuestionのインスタンスを渡してQuestionDetailActivityに遷移
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 // Questionのインスタンスを渡して質問詳細画面を起動する
+
+                int mFavFlag = 0;
+                for (Fav fav:mFavArrayList) {
+                    Log.d("Question",mQuestionArrayList.get(position).getQuestionUid());
+                    Log.d("Fav",fav.getFav());
+                    if (mQuestionArrayList.get(position).getQuestionUid().equals(fav.getFav())) {
+                        mFavFlag = 1;
+                    }
+                }
+                Log.d("intentflag",String.valueOf(mFavFlag));
+
+
                 Intent intent = new Intent(getApplicationContext(), QuestionDetailActivity.class);
                 intent.putExtra("question", mQuestionArrayList.get(position));
+                intent.putExtra("FavFlag", mFavFlag);
                 startActivity(intent);
 
                 // 画面遷移テスト

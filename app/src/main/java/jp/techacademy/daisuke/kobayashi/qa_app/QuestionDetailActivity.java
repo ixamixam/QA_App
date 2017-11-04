@@ -17,6 +17,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class QuestionDetailActivity extends AppCompatActivity {
@@ -24,8 +25,11 @@ public class QuestionDetailActivity extends AppCompatActivity {
     private ListView mListView;
     private Question mQuestion;
     private QuestionDetailListAdapter mAdapter;
-
+    private DatabaseReference mDatabaseReference;
+    private DatabaseReference mFavRef;
     private DatabaseReference mAnswerRef;
+    private ArrayList<Fav> mFavArrayList;
+    private int FabFlag;
 
     private ChildEventListener mEventListener = new ChildEventListener() {
         @Override
@@ -76,15 +80,16 @@ public class QuestionDetailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_question_detail);
 
         // 渡ってきたQuestionのオブジェクトを保持する,ここで最新をどう取得するか
-
         Bundle extras = getIntent().getExtras();
         mQuestion = (Question) extras.get("question");
 
         setTitle(mQuestion.getTitle());
 
+        int mFabFlag = (int) extras.get("FavFlag");
+
         // ListViewの準備
         mListView = (ListView) findViewById(R.id.listView);
-        mAdapter = new QuestionDetailListAdapter(this, mQuestion);
+        mAdapter = new QuestionDetailListAdapter(this, mQuestion, mFabFlag);
         mListView.setAdapter(mAdapter);
         mAdapter.notifyDataSetChanged();
 
