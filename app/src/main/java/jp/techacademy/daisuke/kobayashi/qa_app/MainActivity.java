@@ -248,7 +248,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
-
             // ここでリスト更新
             mAdapter.notifyDataSetChanged();
         }
@@ -303,7 +302,6 @@ public class MainActivity extends AppCompatActivity {
 
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
-        final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -385,7 +383,6 @@ public class MainActivity extends AppCompatActivity {
 
                 // 質問のリストをクリアしてから再度Adapterにセットし、AdapterをListViewにセットし直す
                 mQuestionArrayList.clear();
-                mFavArrayList.clear();
                 mAdapter.setQuestionArrayList(mQuestionArrayList);
                 mListView.setAdapter(mAdapter);
 
@@ -398,8 +395,13 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 // お気に入り一覧取得
-                mFavRef = mDatabaseReference.child(Const.UsersFavPATH).child(user.getUid());
-                mFavRef.addChildEventListener(mEventListenerFavlist);
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                if(user != null) {
+                    Log.d("user", user.getUid());
+                    mFavArrayList.clear();
+                    mFavRef = mDatabaseReference.child(Const.UsersFavPATH).child(user.getUid());
+                    mFavRef.addChildEventListener(mEventListenerFavlist);
+                }
 
                 //if (mFavRef != null) {
                     // 参照先から以前に登録されたイベントを削除
@@ -503,6 +505,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         //帰ってきたとき
-
+        mFavArrayList.clear();
     }
 }
